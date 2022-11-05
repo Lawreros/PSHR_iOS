@@ -18,6 +18,7 @@
 		918D364A2916C35000557BC9 /* StreamSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918D36492916C35000557BC9 /* StreamSettingsView.swift */; };
 		918D364C2916C36300557BC9 /* UiHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918D364B2916C36300557BC9 /* UiHelper.swift */; };
 		918D364E2916C38A00557BC9 /* PolarBleSdkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918D364D2916C38A00557BC9 /* PolarBleSdkManager.swift */; };
+		918D36512916CCEC00557BC9 /* ButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918D36502916CCEC00557BC9 /* ButtonStyle.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,6 +53,7 @@
 		918D36492916C35000557BC9 /* StreamSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSettingsView.swift; sourceTree = "<group>"; };
 		918D364B2916C36300557BC9 /* UiHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UiHelper.swift; sourceTree = "<group>"; };
 		918D364D2916C38A00557BC9 /* PolarBleSdkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolarBleSdkManager.swift; sourceTree = "<group>"; };
+		918D36502916CCEC00557BC9 /* ButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonStyle.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -141,11 +143,20 @@
 		918D36472916B15000557BC9 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				918D364F2916CCDE00557BC9 /* Styles */,
 				918D361C2916AE5F00557BC9 /* ContentView.swift */,
 				918D36492916C35000557BC9 /* StreamSettingsView.swift */,
 				918D364B2916C36300557BC9 /* UiHelper.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		918D364F2916CCDE00557BC9 /* Styles */ = {
+			isa = PBXGroup;
+			children = (
+				918D36502916CCEC00557BC9 /* ButtonStyle.swift */,
+			);
+			path = Styles;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -287,6 +298,7 @@
 				918D364A2916C35000557BC9 /* StreamSettingsView.swift in Sources */,
 				918D364E2916C38A00557BC9 /* PolarBleSdkManager.swift in Sources */,
 				918D361D2916AE5F00557BC9 /* ContentView.swift in Sources */,
+				918D36512916CCEC00557BC9 /* ButtonStyle.swift in Sources */,
 				918D361B2916AE5F00557BC9 /* PSHR_iOSApp.swift in Sources */,
 				918D364C2916C36300557BC9 /* UiHelper.swift in Sources */,
 			);
