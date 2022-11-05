@@ -1,0 +1,34 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "PolarBleSdk",
+        "repositoryURL": "https://github.com/polarofficial/polar-ble-sdk.git",
+        "state": {
+          "branch": null,
+          "revision": "e67f329cda8bede4fab96ce0ea4b911e4bb0a1a5",
+          "version": "3.3.6"
+        }
+      },
+      {
+        "package": "RxSwift",
+        "repositoryURL": "https://github.com/ReactiveX/RxSwift.git",
+        "state": {
+          "branch": null,
+          "revision": "b4307ba0b6425c0ba4178e138799946c3da594f8",
+          "version": "6.5.0"
+        }
+      },
+      {
+        "package": "SwiftProtobuf",
+        "repositoryURL": "https://github.com/apple/swift-protobuf.git",
+        "state": {
+          "branch": null,
+          "revision": "88c7d15e1242fdb6ecbafbc7926426a19be1e98a",
+          "version": "1.20.2"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
