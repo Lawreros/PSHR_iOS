@@ -107,6 +107,8 @@ class PolarBleSdkManager : ObservableObject {
     }
     
     
+    
+    
 }
 
 extension PolarBleSdkManager {

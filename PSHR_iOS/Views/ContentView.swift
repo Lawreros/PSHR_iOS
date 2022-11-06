@@ -52,12 +52,79 @@ struct ContentView: View {
                             Button("Disconnect \(deviceId)", action: {bleSdkManager.disconnectFromDevice()})
                                 .buttonStyle(PrimaryButtonStyle(buttonState: getConnectButtonState()))
                         }
-                    }
-                }
+                        Button("Auto Connect", action: { bleSdkManager.autoConnect()})
+                            .buttonStyle(PrimaryButtonStyle(buttonState: getAutoConnectButtonState()))
+                        
+                    }.disabled(!bleSdkManager.isBluetoothOn)
+                    
+                    Divider() // Put seperation between buttons and streams
+                    
+                    Group {// Streaming Group
+                        Group {
+                            Text("Streams:")
+                                .headerStyle()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            Button( bleSdkManager.isStreamOn(feature: DeviceStreamingFeature.ecg) ? "Stop ECG Stream" : "Start ECG Stream", action: {
+                                streamButtonToggle(DeviceStreamingFeature.ecg) })
+                                .buttonStyle(SecondaryButtonStyle(buttonState: getStreamButtonState(DeviceStreamingFeature.ecg)))
+                            
+                        }.fullScreenCover(item: $bleSdkManager.streamSettings) { streamSettings in
+                            if let settings = streamSettings {
+                                StreamSettingsView(bleSdkManager: bleSdkManager, streamedFeature: settings.feature, streamSettings: settings)
+                            }
+                        }
+                        Divider()
+                        // Display area for the recieved data packets
+                        Group{
+                            Text("Recieved Data Packet")
+                                .headerStyle()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Text("HR: \(bleSdkManager.hr_message)")
+                                .frame(minWidth: 0, maxWidth: .infinity)
+                                .font(.system(size: 30))
+                                .padding()
+                                .foregroundColor(.none)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.black, lineWidth: 2)
+                                )
+                            
+                            Text("ECG: \(bleSdkManager.ecg_message)")
+                                .frame(minWidth: 0, maxWidth: .infinity)
+                                .font(.system(size: 30))
+                                .padding()
+                                .foregroundColor(.none)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.black, lineWidth: 2)
+                                )
+                            Text("Battery: \(bleSdkManager.battery_level)%")
+                                .frame(minWidth: 0, maxWidth: .infinity)
+                                .font(.system(size: 15))
+                                .padding()
+                                .foregroundColor(.none)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .stroke(Color.black, lineWidth:2)
+                                )
+                        }
+                    }.disabled(!bleSdkManager.isDeviceConnected)//Streaming Group
+                }.frame(maxWidth: .infinity)//VStack
             }//ScrollView
-        }//VStack
+        //VStack
+        }.alert(item: $bleSdkManager.generalError) {message in
+            Alert(title: Text(message.text),
+                  dismissButton: .cancel()
+            )
+        }.alert(item: $bleSdkManager.generalMessage){ message in
+            Alert(title: Text(message.text),
+                  dismissButton: .cancel()
+            )//TODO: Check if this double alert is necessary
+        }
     }//View
     
+    // function of changing the connect button
     func getConnectButtonState() -> ButtonState {
         if bleSdkManager.isBluetoothOn {
             switch bleSdkManager.deviceConnectionState {
@@ -70,6 +137,15 @@ struct ContentView: View {
             }
         }
         
+    }
+    
+    // function for changing the autoconnect button
+    func getAutoConnectButtonState() -> ButtonState {
+        if bleSdkManager.isBluetoothOn && !bleSdkManager.isDeviceConnected {
+            return ButtonState.released
+        } else {
+            return ButtonState.disabled
+        }
     }
     
 }//struct
