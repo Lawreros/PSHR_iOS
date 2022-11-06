@@ -30,6 +30,7 @@ struct Message: Identifiable {
     let id = UUID()
     let text: String
 }
+let dispatchQueue = DispatchQueue(label: "QueueIdentification", qos: .background)
 
 
 class PolarBleSdkManager : ObservableObject {
@@ -81,6 +82,8 @@ class PolarBleSdkManager : ObservableObject {
     private var ecgDisposable: Disposable? //question mark means variable can be nil or not
     private var disposeBag = DisposeBag()
     private var audioPlayer : AVAudioPlayer? = nil
+    private var alarmURL = Bundle.main.url(forResource: "IOS_Alarm_bell",
+                                     withExtension: "mp3")!
     
     init() {
         //check on initalization that Bluetooth is on
@@ -94,6 +97,31 @@ class PolarBleSdkManager : ObservableObject {
 //        api.sdkModeFeatureObserver = self
         api.deviceHrObserver = self
         api.logger = self
+        
+        // Create audioplayer for warning when you initalize
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: alarmURL)
+        } catch let err {
+            NSLog("Failed to find sound file. Reason \(err)")
+        }
+        
+        // Create asyncronous while loop to add vibration to repeated noise
+        dispatchQueue.async{
+            NSLog("async activated")
+            while true {
+                switch self.audioPlayer?.isPlaying{
+                case .none:
+                    sleep(10)
+                case .some(let s):
+                    if s == true {
+                        sleep(1); AudioServicesPlayAlertSound(kSystemSoundID_Vibrate)
+                    } else {
+                        NSLog("contents of s: \(s)")
+                        sleep(10)
+                    }
+                }
+            }
+        }
     }
     
     // func broadcastToggle: searches for ble devices which are broadcasting
@@ -291,10 +319,9 @@ class PolarBleSdkManager : ObservableObject {
                     
                     case .error(let err): //If an error has occured
                         NSLog("ECG stream failed: \(err)")
-                        for _ in 1...2 {
-                            AudioServicesPlayAlertSound(SystemSoundID(1005))
-                            sleep(1)
-                        }
+                        // Play the audio warning 5 times
+                        self.audioPlayer?.numberOfLoops = 5
+                        self.audioPlayer?.play()
                         self.isEcgStreamOn = false //TODO: Is this the cause of ECG dropping out?
                     case .completed: //If there is MainScheduler is done(?)
                         NSLog("ECG stream completed")
@@ -402,6 +429,8 @@ extension PolarBleSdkManager : PolarBleApiObserver {
     }
     
     func deviceConnected(_ polarDeviceInfo: PolarDeviceInfo) {
+        // Stop playing of alarm if it is currently running from being disconnected
+        audioPlayer?.stop()
         NSLog("DEVICE CONNECTED: \(polarDeviceInfo)")
         if(polarDeviceInfo.name.contains("H10")){//Check if connected device is H10
             self.isH10RecordingSupported = true
@@ -426,16 +455,8 @@ extension PolarBleSdkManager : PolarBleApiObserver {
         self.isH10RecordingSupported = false
         self.supportedStreamFeatures = Set<DeviceStreamingFeature>()
         
-        let alarmURL = Bundle.main.url(forResource: "IOS_Alarm_bell",
-                                         withExtension: "mp3")!
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: alarmURL)
-            audioPlayer?.numberOfLoops = -1
-            audioPlayer?.play()
-            vibrate()
-        } catch let err {
-            NSLog("Failed to find sound file. Reason \(err)")
-        }
+        audioPlayer?.numberOfLoops = 5
+        audioPlayer?.play()
     }
 }
 
@@ -446,6 +467,11 @@ extension PolarBleSdkManager : PolarBleApiDeviceHrObserver {
         formatter.dateFormat = "HH:mm:ss.SSSS"
         
 //        NSLog("(\(identifier)) HR value: \(data.hr) rrsMs: \(data.rrsMs) rrs: \(data.rrs) contact: \(data.contact) contact supported: \(data.contactSupported)")
+        
+        // Causes the iPhone to vibrate every time it receives RR-interval data
+        if isEcgStreamOn == false {
+            AudioServicesPlayAlertSound(SystemSoundID(1005))
+        }
         
         let timestamp = formatter.string(from: Date())
         let RR_count = data.rrsMs.count
