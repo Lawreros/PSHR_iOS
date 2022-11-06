@@ -25,7 +25,7 @@ struct ContentView: View {
         VStack {
             // Title at the top of the app
             Text("PSHR BLE App")
-                .bold
+                .bold()
             
             ScrollView(.vertical){
                 VStack(spacing: 10) {
