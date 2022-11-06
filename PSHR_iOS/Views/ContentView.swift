@@ -136,7 +136,7 @@ struct ContentView: View {
                 return ButtonState.pressedDown
             }
         }
-        
+        return ButtonState.disabled
     }
     
     // function for changing the autoconnect button
@@ -146,6 +146,34 @@ struct ContentView: View {
         } else {
             return ButtonState.disabled
         }
+    }
+    
+    // button for toggling the streaming of ecg data
+    func streamButtonToggle(_ feature:DeviceStreamingFeature) {
+        NSLog("Stream toggle for feature \(feature)")
+        
+        // TODO: Remove this multi-stream setup as only HR/ECG/Battery are needed
+        if(bleSdkManager.isStreamOn(feature: feature)) {
+            bleSdkManager.streamStop(feature: feature)
+        } else {
+            if(feature == DeviceStreamingFeature.ppi) {
+                NSLog("ppiStream not enabled")
+                //bleSdkManager.ppiStreamStart()
+            } else {
+                bleSdkManager.getStreamSettings(feature: feature)
+            }
+        }
+    }
+    
+    func getStreamButtonState(_ feature: DeviceStreamingFeature) -> ButtonState {
+        if bleSdkManager.isDeviceConnected && bleSdkManager.supportedStreamFeatures.contains(feature) {
+            if bleSdkManager.isStreamOn(feature: feature) {
+                return ButtonState.pressedDown
+            } else {
+                return ButtonState.released
+            }
+        }
+        return ButtonState.disabled
     }
     
 }//struct

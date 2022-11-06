@@ -12,6 +12,25 @@ import CoreBluetooth
 import AudioToolbox
 import AVFoundation
 
+struct StreamSettings: Identifiable, Hashable {
+    let id = UUID()
+    let feature: DeviceStreamingFeature
+    var settings: [StreamSetting] = []
+    var sortedSettings: [StreamSetting] { return settings.sorted{ $0.type.rawValue < $1.type.rawValue }}
+}
+
+struct StreamSetting: Identifiable, Hashable {
+    let id = UUID()
+    let type: PolarSensorSetting.SettingType
+    var values: [Int] = []
+    var sortedValues: [Int] { return values.sorted(by:<)}
+}
+
+struct Message: Identifiable {
+    let id = UUID()
+    let text: String
+}
+
 
 class PolarBleSdkManager : ObservableObject {
     
@@ -54,7 +73,12 @@ class PolarBleSdkManager : ObservableObject {
     
     @Published private(set) var isDeviceConnected: Bool = false
     @Published private var isEcgStreamOn: Bool = false
+    @Published private(set) var isH10RecordingSupported: Bool = false
+    @Published private(set) var isH10RecordingEnabled: Bool = false
+    @Published private(set) var supportedStreamFeatures: Set<DeviceStreamingFeature> = Set<DeviceStreamingFeature>()
     @Published var streamSettings: StreamSettings? = nil
+    @Published var generalError: Message? = nil
+    @Published var generalMessage: Message? = nil
     
     private var ecgDisposable: Disposable? //question mark means variable can be nil or not
     private var disposeBag = DisposeBag()
@@ -65,10 +89,10 @@ class PolarBleSdkManager : ObservableObject {
         
         api.polarFilter(true)
         api.observer = self
-        api.deviceFeaturesObserver = self
+//        api.deviceFeaturesObserver = self
         api.powerStateObserver = self
         api.deviceInfoObserver = self
-        api.sdkModeFeatureObserver = self
+//        api.sdkModeFeatureObserver = self
         api.deviceHrObserver = self
         api.logger = self
     }
@@ -135,7 +159,7 @@ class PolarBleSdkManager : ObservableObject {
                         self.streamSettings = StreamSettings(feature: feature, settings: receivedSettings)
                         
                     case .failure(let err):
-                        self.sometingFailed(text: "Stream settins request failed: \(err)")
+                        self.somethingFailed(text: "Stream settins request failed: \(err)")
                         self.streamSettings = nil
                     }
                 }.disposed(by: disposeBag) //in charge of killing stream safely
@@ -156,17 +180,22 @@ class PolarBleSdkManager : ObservableObject {
         
         switch settings.feature {
         case .ecg:
-            ecgStartStream(settings: PolarSensorSetting(polarSensorSettings))
+            ecgStreamStart(settings: PolarSensorSetting(polarSensorSettings))
         //Other supported streams that we don't use (see TODO: put link here):
-//        case .acc:
+        case .acc:
+            break
 //            accStreamStart(settings: PolarSensorSetting(polarSensorSettings))
-//        case .magnetometer:
+        case .magnetometer:
+            break
 //            magStreamStart(settings: PolarSensorSetting(polarSensorSettings))
-//        case .ppg:
+        case .ppg:
+            break
 //            ppgStreamStart(settings: PolarSensorSetting(polarSensorSettings))
-//        case .ppi:
+        case .ppi:
+            break
 //            ppiStreamStart()
-//        case .gyro:
+        case .gyro:
+            break
 //            gyrStreamStart(settings: PolarSensorSetting(polarSensorSettings))
         }
         
@@ -177,16 +206,68 @@ class PolarBleSdkManager : ObservableObject {
         case .ecg:
             ecgStreamStop()
         //Other supported streams (see streamStart)
-//        case .acc:
-//            accStreamStop()
-//        case .magnetometer:
-//            magStreamStop()
-//        case .ppg:
-//            ppgStreamStop()
-//        case .ppi:
-//            ppiStreamStop()
-//        case .gyro:
-//            gyrStreamStop()
+        case .acc:
+            break
+            //accStreamStop()
+        case .magnetometer:
+            break
+            //magStreamStop()
+        case .ppg:
+            break
+            //ppgStreamStop()
+        case .ppi:
+            break
+            //ppiStreamStop()
+        case .gyro:
+            break
+            //gyrStreamStop()
+        }
+    }
+    
+    
+    func isStreamOn(feature: PolarBleSdk.DeviceStreamingFeature) -> Bool {
+        switch feature {
+        case .ecg:
+             return isEcgStreamOn
+        case .acc:
+            return false
+            //return isAccStreamOn
+        case .magnetometer:
+            return false
+            //return isMagStreamOn
+        case .ppg:
+            return false
+            //return isPpgSreamOn
+        case .ppi:
+            return false
+            //return isPpiStreamOn
+        case .gyro:
+            return false
+            //return isGyrStreamOn
+        }
+    }
+    
+    // Function which keep track of whether to app is connecteed to an H10 device
+    func getH10RecordingStatus() {
+        if case .connected(let deviceId) = deviceConnectionState {
+            api.requestRecordingStatus(deviceId)
+                .observe(on: MainScheduler.instance)
+                .subscribe{ e in
+                    switch e {
+                    case .failure(let err):
+                        self.somethingFailed(text: "recording status request failed: \(err)")
+                    case .success(let pair):
+                        var recordingStatus = "Recording on: \(pair.ongoing)."
+                        if pair.ongoing {
+                            recordingStatus.append(" Recording started with id: \(pair.entryId)")
+                            self.isH10RecordingEnabled = true
+                        } else {
+                            self.isH10RecordingEnabled = false
+                        }
+                        self.generalMessage = Message(text: recordingStatus)
+                        NSLog(recordingStatus)
+                    }
+                }.disposed(by: disposeBag)
         }
     }
     
@@ -205,7 +286,7 @@ class PolarBleSdkManager : ObservableObject {
                     case .next(let data): //if the next bit of data has been sent
                         let timestamp = formatter.string(from: Date())
                         let stringArray = data.samples.map { String($0) }
-                        let ecg_string = stringArray.joined(seperator: "\t")
+                        let ecg_string = stringArray.joined(separator: "\t")
                         Logger.log("\(data.timeStamp)\t\(ecg_string)", timestamp, "ECG", deviceId)
                         self.ecg_message = "\(timestamp)\n\(data.samples[0])\t\(data.samples[1])"
                     
@@ -239,19 +320,176 @@ class PolarBleSdkManager : ObservableObject {
 }
 
 
-
-
-
 // MARK: - PolarBleApiLogger
 extension PolarBleSdkManager {
     enum ConnectionState {//"Define an enumeration type ConnectionState which
                         // can take either a value of disconnected with nothing
                         // or a value of connection/connected with a value of String
         case disconnected
-        case connection(String)
+        case connecting(String)
         case connected(String)
     }
 }
 
+// Adds the message function (just puts things into a NSLog)
+extension PolarBleSdkManager : PolarBleApiLogger {
+    func message(_ str: String) {
+        NSLog("Polar SDK log:  \(str)")
+    }
+}
+
+// MARK: - PolarBleApiPowerStateObserver
+// Extend the PolarBleSdkManager with a protocol for the power state and functions which log
+// when the power is on or off
+//TODO: See if this extension is even necessary
+extension PolarBleSdkManager : PolarBleApiPowerStateObserver {
+    func blePowerOn() {
+        NSLog("BLE ON")
+        isBluetoothOn = true
+    }
+    
+    func blePowerOff() {
+        NSLog("BLE OFF")
+        isBluetoothOn = false
+    }
+}
+
+// MARK: - PolarBleApiDeviceInfoObserver
+// Extend PolarBleSdkManager with protocol for recieving/processing/tracking the battery level
+// for the connected polar device
+extension PolarBleSdkManager : PolarBleApiDeviceInfoObserver {
+    func batteryLevelReceived(_ identifier: String, batteryLevel: UInt) {
+        NSLog("battery level updated: \(batteryLevel)")
+        battery_level = "\(batteryLevel)"
+    }
+    
+    func disInformationReceived(_ identifier: String, uuid: CBUUID, value: String) {
+        NSLog("dis info: \(uuid.uuidString) value: \(value)")
+    }
+}
+
+
+// MARK: - PolarBleApiObserver
+// Extend the PolarBleSdkManager with a protocol for the tracking of the connection status
+// for the BLE device
+extension PolarBleSdkManager : PolarBleApiObserver {
+    func deviceConnecting(_ polarDeviceInfo: PolarDeviceInfo) {
+        NSLog("DEVICE CONNECTING: \(polarDeviceInfo)")
+        deviceConnectionState = ConnectionState.connecting(polarDeviceInfo.deviceId)
+    }
+    
+    func deviceConnected(_ polarDeviceInfo: PolarDeviceInfo) {
+        NSLog("DEVICE CONNECTED: \(polarDeviceInfo)")
+        if(polarDeviceInfo.name.contains("H10")){//Check if connected device is H10
+            self.isH10RecordingSupported = true
+            getH10RecordingStatus()
+        }
+        deviceConnectionState = ConnectionState.connected(polarDeviceInfo.deviceId)
+    }
+    
+    func deviceDisconnected(_ polarDeviceInfo: PolarDeviceInfo) {
+        NSLog("DISCONNECTED: \(polarDeviceInfo)")
+        deviceConnectionState = ConnectionState.disconnected
+//        self.isSdkStreamModeEnabled = false
+//        self.isSdkFeatureSupported = false
+//        self.isFtpFeatureSupported = false
+        self.isH10RecordingSupported = false
+        self.supportedStreamFeatures = Set<DeviceStreamingFeature>()
+//        for _ in 1...4 {
+//        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+//        AudioServicesPlayAlertSound(SystemSoundID(1323))
+//            sleep(1)
+//        }
+        for _ in 1...2 {
+        AudioServicesPlayAlertSound(SystemSoundID(1005))
+        sleep(1)
+        }
+    }
+}
+
+// MARK: - PolarBleApiDeviceHrObserver
+extension PolarBleSdkManager : PolarBleApiDeviceHrObserver {
+    func hrValueReceived(_ identifier: String, data: PolarHrData) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss.SSSS"
+        
+        NSLog("(\(identifier)) HR value: \(data.hr) rrsMs: \(data.rrsMs) rrs: \(data.rrs) contact: \(data.contact) contact supported: \(data.contactSupported)")
+        
+        let timestamp = formatter.string(from: Date())
+        let RR_count = data.rrsMs.count
+        var RRs: String = "ERROR"
+        
+        if RR_count == 0 {
+            RRs = "0\t0\t0"
+        } else if RR_count == 1 {
+            RRs = "\(data.rrsMs[0])\t0\t0"
+        } else if RR_count == 2 {
+            RRs = "\(data.rrsMs[0])\t\(data.rrsMs[1])\t0"
+        } else if RR_count == 3 {
+            RRs = "\(data.rrsMs[0])\t\(data.rrsMs[1])\t\(data.rrsMs[2])"
+        }
+        
+        Logger.log("\(data.hr)\t\(RRs)", timestamp, "HR", identifier) //for some reason, here it pulls the initial deviceId, instad of the real one, unlike with the logging of ECG data
+        hr_message = "\(timestamp)\n\(data.rrsMs)"
+        
+    }
+}
+
+
+
 // MARK: - PSHR Logger
 
+class Logger {
+    // Create the filename and path for the text file that you wish to append the data to
+    static func gen_test_file(_ dattype:String, _ deviceID:String)->String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM-dd-yyyy"
+        let dateString = formatter.string(from: Date())
+        let fileName = "\(dattype)_\(dateString)_\(deviceID).txt"
+        return fileName
+    }
+
+    
+    // Actuallly append the data to the text file
+    static func log(_ message: String, _ timestamp: String, _ source: String, _ deviceID: String) {
+        
+        let documentDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        
+        // Add the device ID to the name of the file
+        guard let textFile_ecg = documentDirectory?.appendingPathComponent(gen_test_file(source, deviceID)) else {
+            return
+        }
+        guard let textFile_hr = documentDirectory?.appendingPathComponent(gen_test_file(source, deviceID)) else {
+            return
+        }
+        
+        guard let data = (timestamp + "\t" + message + "\n").data(using: String.Encoding.utf8) else { return }
+
+        // What to write into ECG text file
+        if source == "ECG" {
+        
+            if FileManager.default.fileExists(atPath: textFile_ecg.path) {
+                if let fileHandle = try? FileHandle(forWritingTo: textFile_ecg) {
+                    fileHandle.seekToEndOfFile()
+                    fileHandle.write(data)
+                    fileHandle.closeFile()
+                }
+            } else {
+                try? data.write(to: textFile_ecg, options: .atomicWrite)
+            }
+        }
+        
+        // What to write into HR text file
+        if source == "HR" {
+            if FileManager.default.fileExists(atPath: textFile_hr.path) {
+                if let fileHandle = try? FileHandle(forWritingTo: textFile_hr) {
+                    fileHandle.seekToEndOfFile()
+                    fileHandle.write(data)
+                    fileHandle.closeFile()
+                }
+            } else {
+                try? data.write(to: textFile_hr, options: .atomicWrite)
+            }
+        }
+    }
+}
