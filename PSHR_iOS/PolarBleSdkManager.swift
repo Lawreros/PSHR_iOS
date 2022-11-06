@@ -54,8 +54,6 @@ class PolarBleSdkManager : ObservableObject {
     
     private var autoConnectDisposable: Disposable?
     
-    
-    
     //Stores the state of the device being connected
     @Published private(set) var deviceConnectionState: ConnectionState =
         ConnectionState.disconnected {
@@ -82,6 +80,7 @@ class PolarBleSdkManager : ObservableObject {
     
     private var ecgDisposable: Disposable? //question mark means variable can be nil or not
     private var disposeBag = DisposeBag()
+    private var audioPlayer : AVAudioPlayer? = nil
     
     init() {
         //check on initalization that Bluetooth is on
@@ -135,7 +134,7 @@ class PolarBleSdkManager : ObservableObject {
     }
     
     //TODO: Check that this and streamStart are necessary
-    // Get teh supported settings/streaming information for the connected device
+    // Get the supported settings/streaming information for the connected device
     func getStreamSettings(feature: PolarBleSdk.DeviceStreamingFeature) {
         if case .connected(let deviceId) = deviceConnectionState {
             NSLog("Stream settings fetch for \(feature)")
@@ -354,6 +353,30 @@ extension PolarBleSdkManager : PolarBleApiPowerStateObserver {
     }
 }
 
+// MARK: - PolarBleApiSdkModeFeatureObserver
+// Check if certain data types are available for transmission from the connected
+// polar strap device (in this case HR and "streaming" (i.e. ecg and others))
+extension PolarBleSdkManager : PolarBleApiDeviceFeaturesObserver {
+    func hrFeatureReady(_ identifier: String) {
+        NSLog("HR ready")
+    }
+    
+    //NOT USED but necessary for PolarBleApiDeviceFeaturesObserver protocol
+    func ftpFeatureReady(_ identifier: String) {
+        //NSLog("FTP ready")
+        //isFtpFeatureSupported = true
+    }
+    
+    func streamingFeaturesReady(_ identifier: String, streamingFeatures: Set<DeviceStreamingFeature>) {
+        supportedStreamFeatures = streamingFeatures
+        for feature in streamingFeatures {
+            NSLog("Feature \(feature) is ready.")
+        }
+    }
+}
+
+
+
 // MARK: - PolarBleApiDeviceInfoObserver
 // Extend PolarBleSdkManager with protocol for recieving/processing/tracking the battery level
 // for the connected polar device
@@ -387,6 +410,13 @@ extension PolarBleSdkManager : PolarBleApiObserver {
         deviceConnectionState = ConnectionState.connected(polarDeviceInfo.deviceId)
     }
     
+    //Warning function to be called
+    func vibrate() {
+        for _ in 0...10 {
+            DispatchQueue.main.async(execute: {sleep(1); AudioServicesPlayAlertSound(kSystemSoundID_Vibrate)})
+        }
+    }
+    
     func deviceDisconnected(_ polarDeviceInfo: PolarDeviceInfo) {
         NSLog("DISCONNECTED: \(polarDeviceInfo)")
         deviceConnectionState = ConnectionState.disconnected
@@ -395,14 +425,16 @@ extension PolarBleSdkManager : PolarBleApiObserver {
 //        self.isFtpFeatureSupported = false
         self.isH10RecordingSupported = false
         self.supportedStreamFeatures = Set<DeviceStreamingFeature>()
-//        for _ in 1...4 {
-//        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
-//        AudioServicesPlayAlertSound(SystemSoundID(1323))
-//            sleep(1)
-//        }
-        for _ in 1...2 {
-        AudioServicesPlayAlertSound(SystemSoundID(1005))
-        sleep(1)
+        
+        let alarmURL = Bundle.main.url(forResource: "IOS_Alarm_bell",
+                                         withExtension: "mp3")!
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: alarmURL)
+            audioPlayer?.numberOfLoops = -1
+            audioPlayer?.play()
+            vibrate()
+        } catch let err {
+            NSLog("Failed to find sound file. Reason \(err)")
         }
     }
 }
@@ -413,7 +445,7 @@ extension PolarBleSdkManager : PolarBleApiDeviceHrObserver {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss.SSSS"
         
-        NSLog("(\(identifier)) HR value: \(data.hr) rrsMs: \(data.rrsMs) rrs: \(data.rrs) contact: \(data.contact) contact supported: \(data.contactSupported)")
+//        NSLog("(\(identifier)) HR value: \(data.hr) rrsMs: \(data.rrsMs) rrs: \(data.rrs) contact: \(data.contact) contact supported: \(data.contactSupported)")
         
         let timestamp = formatter.string(from: Date())
         let RR_count = data.rrsMs.count

@@ -19,6 +19,7 @@
 		918D364C2916C36300557BC9 /* UiHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918D364B2916C36300557BC9 /* UiHelper.swift */; };
 		918D364E2916C38A00557BC9 /* PolarBleSdkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918D364D2916C38A00557BC9 /* PolarBleSdkManager.swift */; };
 		918D36512916CCEC00557BC9 /* ButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918D36502916CCEC00557BC9 /* ButtonStyle.swift */; };
+		918D3655291829B800557BC9 /* IOS_Alarm_bell.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 918D3654291829B800557BC9 /* IOS_Alarm_bell.mp3 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +55,8 @@
 		918D364B2916C36300557BC9 /* UiHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UiHelper.swift; sourceTree = "<group>"; };
 		918D364D2916C38A00557BC9 /* PolarBleSdkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolarBleSdkManager.swift; sourceTree = "<group>"; };
 		918D36502916CCEC00557BC9 /* ButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonStyle.swift; sourceTree = "<group>"; };
+		918D3652291813E700557BC9 /* PSHR-iOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "PSHR-iOS-Info.plist"; sourceTree = SOURCE_ROOT; };
+		918D3654291829B800557BC9 /* IOS_Alarm_bell.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = IOS_Alarm_bell.mp3; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +109,8 @@
 		918D36192916AE5F00557BC9 /* PSHR_iOS */ = {
 			isa = PBXGroup;
 			children = (
+				918D36532918299000557BC9 /* Sounds */,
+				918D3652291813E700557BC9 /* PSHR-iOS-Info.plist */,
 				918D361A2916AE5F00557BC9 /* PSHR_iOSApp.swift */,
 				918D36472916B15000557BC9 /* Views */,
 				918D361E2916AE6200557BC9 /* Assets.xcassets */,
@@ -157,6 +162,14 @@
 				918D36502916CCEC00557BC9 /* ButtonStyle.swift */,
 			);
 			path = Styles;
+			sourceTree = "<group>";
+		};
+		918D36532918299000557BC9 /* Sounds */ = {
+			isa = PBXGroup;
+			children = (
+				918D3654291829B800557BC9 /* IOS_Alarm_bell.mp3 */,
+			);
+			path = Sounds;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -269,6 +282,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				918D3655291829B800557BC9 /* IOS_Alarm_bell.mp3 in Resources */,
 				918D36222916AE6200557BC9 /* Preview Assets.xcassets in Resources */,
 				918D361F2916AE6200557BC9 /* Assets.xcassets in Resources */,
 			);
@@ -464,6 +478,7 @@
 				DEVELOPMENT_TEAM = 7T9789YLBV;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "PSHR-iOS-Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -493,6 +508,7 @@
 				DEVELOPMENT_TEAM = 7T9789YLBV;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "PSHR-iOS-Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

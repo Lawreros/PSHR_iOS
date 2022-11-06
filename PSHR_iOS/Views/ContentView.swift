@@ -166,6 +166,7 @@ struct ContentView: View {
     }
     
     func getStreamButtonState(_ feature: DeviceStreamingFeature) -> ButtonState {
+        NSLog("search this: \(bleSdkManager.supportedStreamFeatures)")
         if bleSdkManager.isDeviceConnected && bleSdkManager.supportedStreamFeatures.contains(feature) {
             if bleSdkManager.isStreamOn(feature: feature) {
                 return ButtonState.pressedDown
