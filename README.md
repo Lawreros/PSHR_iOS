@@ -1,6 +1,6 @@
 # PSHR_iOS
 
-This repository to to create a seperate and stable version of the previously used https://github.com/Lawreros/PSHR_v2 
+This repository was made to create a seperate and stable version of the previously used https://github.com/Lawreros/PSHR_v2 
 
 This app is made to interface with the H10 Polar Strap using the `PolarBleSdk` library found on one of [Polar Strap's Official Github Repos](https://github.com/polarofficial/polar-ble-sdk).
 As code and overall structure of the app is taken from `PolarBleSdk`, as per their request, the liscensing is propogated and can be found [here](https://github.com/Lawreros/PSHR_iOS/blob/main/ThirdPartySoftwareListing.txt)
@@ -27,6 +27,7 @@ Most accurate Heart rate sensor in the markets. The H10 is used in the Getting s
 ### Requirements
 * Xcode 12.x
 * Swift 5.x
+
 ## Dependencies
 *  [PolarBleSdk 3.3.6](https://github.com/polarofficial/polar-ble-sdk) or above
 *  [RxSwift 6.0](https://github.com/ReactiveX/RxSwift) or above
@@ -34,8 +35,35 @@ Most accurate Heart rate sensor in the markets. The H10 is used in the Getting s
 
 
 ## File Summary:
+Below is a diagram of the folders and files found in the source code for the `PSHR_iOS` app, along with brief descriptions of what is found in them. The two most important files for chaning aspects of the app are `ContentView.swift` and `PolarBleSdkManager`. ContentView defines the structure of the view that the user sees when using the app. This is where everything related to what the user actually sees when using the app is defined. `PolarBleSdkManager` is where the BLE connection and data recording is defined/handled. The class definde in this file is effectively the engine of the entire app and sends information to update `ContentView`.
+
 ```
+PSHR_iOS.xcodeproj
+README.md
 
+PSHR_iOS/
+    Sounds/
+        IOS_Alarm_bell.mp3 : Alarm sound used by app
+    
+    PSHR-iOS-info.plist : app resource permissions file
+    PSHR_iOSApp.swift : The app file itself (calls ContentView.swift)
+    
+    Views/
+        Styles/
+            ButtonStyle.swift
+        ContentView.swift : Defines what the user sees when using the app
+        StreamSettingsView.swift
+        Assets.xcassets : File containing the images used for the app logo
+    
+    Preview Content/
+        Preview Assets
+    
+    PolarBleSdkManager.swift : This file is where 90% of the apps functionality is defined. It defines and handles the BLE connection and calculating/organizing/recording of data from the polar strap. This updates ContentView.swift witht he new information to display to the user
 
+PSHR_iOSTests/
+    PSHR_iOSTests.swift
 
+PSHR_iOSUITests/
+    PSHR_iOSUITests.swift
+    PSHR_iOSUITestsLaunchTests.swift
 ```
