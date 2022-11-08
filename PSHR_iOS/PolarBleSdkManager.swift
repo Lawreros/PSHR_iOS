@@ -98,7 +98,15 @@ class PolarBleSdkManager : ObservableObject {
         api.deviceHrObserver = self
         api.logger = self
         
-        // Create audioplayer for warning when you initalize
+        // Create AVAudioSession for warning when you initalize the app. This allows for the warning
+        // .mp3 to play while the app is closed/the screen is locked
+        do {
+            try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category.playback)
+            let _ = try AVAudioSession.sharedInstance().setActive(true)
+        } catch let error as NSError {
+            NSLog("An error occurred when audio session category. \n \(error)")
+        }
+        
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: alarmURL)
         } catch let err {
@@ -126,7 +134,6 @@ class PolarBleSdkManager : ObservableObject {
     
     // func broadcastToggle: searches for ble devices which are broadcasting
     // func searchToggle: searches for polar devices
-    
     
     func connectToDevice() {
         do {
@@ -319,9 +326,9 @@ class PolarBleSdkManager : ObservableObject {
                     
                     case .error(let err): //If an error has occured
                         NSLog("ECG stream failed: \(err)")
-                        // Play the audio warning 5 times
-                        self.audioPlayer?.numberOfLoops = 5
-                        self.audioPlayer?.play()
+                        // Set isEcgSteamOn to false, resulting in the repeated warning noises
+//                        self.audioPlayer?.numberOfLoops = 5
+//                        self.audioPlayer?.play()
                         self.isEcgStreamOn = false //TODO: Is this the cause of ECG dropping out?
                     case .completed: //If there is MainScheduler is done(?)
                         NSLog("ECG stream completed")
@@ -439,13 +446,6 @@ extension PolarBleSdkManager : PolarBleApiObserver {
         deviceConnectionState = ConnectionState.connected(polarDeviceInfo.deviceId)
     }
     
-    //Warning function to be called
-    func vibrate() {
-        for _ in 0...10 {
-            DispatchQueue.main.async(execute: {sleep(1); AudioServicesPlayAlertSound(kSystemSoundID_Vibrate)})
-        }
-    }
-    
     func deviceDisconnected(_ polarDeviceInfo: PolarDeviceInfo) {
         NSLog("DISCONNECTED: \(polarDeviceInfo)")
         deviceConnectionState = ConnectionState.disconnected
@@ -455,7 +455,7 @@ extension PolarBleSdkManager : PolarBleApiObserver {
         self.isH10RecordingSupported = false
         self.supportedStreamFeatures = Set<DeviceStreamingFeature>()
         
-        audioPlayer?.numberOfLoops = 5
+        audioPlayer?.numberOfLoops = -1
         audioPlayer?.play()
     }
 }
@@ -468,7 +468,7 @@ extension PolarBleSdkManager : PolarBleApiDeviceHrObserver {
         
 //        NSLog("(\(identifier)) HR value: \(data.hr) rrsMs: \(data.rrsMs) rrs: \(data.rrs) contact: \(data.contact) contact supported: \(data.contactSupported)")
         
-        // Causes the iPhone to vibrate every time it receives RR-interval data
+        // Causes the iPhone to vibrate every time it receives RR-interval data while not getting ECG data
         if isEcgStreamOn == false {
             AudioServicesPlayAlertSound(SystemSoundID(1005))
         }
