@@ -102,6 +102,8 @@ class PolarBleSdkManager : ObservableObject {
         
         // Create AVAudioSession for warning when you initalize the app. This allows for the warning
         // .mp3 to play while the app is closed/the screen is locked
+        // https://www.sagorin.org/ios-playing-audio-in-background-audio/
+        // https://www.hackingwithswift.com/example-code/media/how-to-play-sounds-using-avaudioplayer
         do {
             try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category.playback)
             let _ = try AVAudioSession.sharedInstance().setActive(true)
