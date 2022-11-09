@@ -30,7 +30,8 @@ struct Message: Identifiable {
     let id = UUID()
     let text: String
 }
-let dispatchQueue = DispatchQueue(label: "QueueIdentification", qos: .background)
+let dispatchQueue = DispatchQueue(label: "Queue1", qos: .background)
+let dispatchQueue2 = DispatchQueue(label: "Queue2", qos: .background)
 
 
 class PolarBleSdkManager : ObservableObject {
@@ -81,7 +82,8 @@ class PolarBleSdkManager : ObservableObject {
     
     private var ecgDisposable: Disposable? //question mark means variable can be nil or not
     private var disposeBag = DisposeBag()
-    private var audioPlayer : AVAudioPlayer? = nil
+    private var audioPlayer : AVAudioPlayer? = nil //Audio player for full disconnect
+    private var audioPlayer2 : AVAudioPlayer? = nil //Audio player for not collecting ECG
     private var alarmURL = Bundle.main.url(forResource: "IOS_Alarm_bell",
                                      withExtension: "mp3")!
     
@@ -108,7 +110,8 @@ class PolarBleSdkManager : ObservableObject {
         }
         
         do {
-            audioPlayer = try AVAudioPlayer(contentsOf: alarmURL)
+            audioPlayer = try AVAudioPlayer(contentsOf: alarmURL) // Where you can specify what music files to play for each alarm
+            audioPlayer2 = try AVAudioPlayer(contentsOf: alarmURL)
         } catch let err {
             NSLog("Failed to find sound file. Reason \(err)")
         }
@@ -125,6 +128,24 @@ class PolarBleSdkManager : ObservableObject {
                         sleep(1); AudioServicesPlayAlertSound(kSystemSoundID_Vibrate)
                     } else {
                         NSLog("contents of s: \(s)")
+                        sleep(10)
+                    }
+                }
+            }
+        }
+        
+        // Second dispatch for the ECG warnings
+        dispatchQueue2.async{
+            NSLog("async activated")
+            while true {
+                switch self.audioPlayer2?.isPlaying{
+                case .none:
+                    sleep(10)
+                case .some(let z):
+                    if z == true {
+                        sleep(1); AudioServicesPlayAlertSound(kSystemSoundID_Vibrate)
+                    } else {
+                        NSLog("contents of z: \(z)")
                         sleep(10)
                     }
                 }
@@ -312,6 +333,9 @@ class PolarBleSdkManager : ObservableObject {
             let formatter = DateFormatter()
             formatter.dateFormat = "HH:mm:ss.SSSS"
             
+            audioPlayer2?.stop()
+            NSLog("audioPlayer2 stopped because ecgstream started")
+            
             isEcgStreamOn = true
             ecgDisposable = api.startEcgStreaming(deviceId, settings: settings)
                 .observe(on: MainScheduler.instance)
@@ -327,8 +351,10 @@ class PolarBleSdkManager : ObservableObject {
                     case .error(let err): //If an error has occured
                         NSLog("ECG stream failed: \(err)")
                         // Set isEcgSteamOn to false, resulting in the repeated warning noises
-//                        self.audioPlayer?.numberOfLoops = 5
-//                        self.audioPlayer?.play()
+                        self.audioPlayer2?.numberOfLoops = -1
+                        if self.isDeviceConnected == true{
+                            self.audioPlayer2?.play()
+                        }
                         self.isEcgStreamOn = false //TODO: Is this the cause of ECG dropping out?
                     case .completed: //If there is MainScheduler is done(?)
                         NSLog("ECG stream completed")
@@ -457,6 +483,8 @@ extension PolarBleSdkManager : PolarBleApiObserver {
         
         audioPlayer?.numberOfLoops = -1
         audioPlayer?.play()
+        audioPlayer2?.stop()
+        NSLog("audioPlayer2 stopped because of device disconnection")
     }
 }
 
@@ -467,11 +495,6 @@ extension PolarBleSdkManager : PolarBleApiDeviceHrObserver {
         formatter.dateFormat = "HH:mm:ss.SSSS"
         
 //        NSLog("(\(identifier)) HR value: \(data.hr) rrsMs: \(data.rrsMs) rrs: \(data.rrs) contact: \(data.contact) contact supported: \(data.contactSupported)")
-        
-        // Causes the iPhone to vibrate every time it receives RR-interval data while not getting ECG data
-        if isEcgStreamOn == false {
-            AudioServicesPlayAlertSound(SystemSoundID(1005))
-        }
         
         let timestamp = formatter.string(from: Date())
         let RR_count = data.rrsMs.count
@@ -489,6 +512,14 @@ extension PolarBleSdkManager : PolarBleApiDeviceHrObserver {
         
         Logger.log("\(data.hr)\t\(RRs)", timestamp, "HR", identifier) //for some reason, here it pulls the initial deviceId, instad of the real one, unlike with the logging of ECG data
         hr_message = "\(timestamp)\n\(data.rrsMs)"
+        
+        // Causes the iPhone to vibrate every time it receives RR-interval data while not getting ECG data
+        if isEcgStreamOn == false {
+            if self.audioPlayer2?.isPlaying == false && self.audioPlayer?.isPlaying == false {
+                NSLog("audioPlayer2 playing because HR without ECG")
+                audioPlayer2?.play()
+            }
+        }
         
     }
 }
