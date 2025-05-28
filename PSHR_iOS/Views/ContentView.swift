@@ -70,9 +70,13 @@ struct ContentView: View {
                                 .buttonStyle(SecondaryButtonStyle(buttonState: getStreamButtonState(DeviceStreamingFeature.ecg)))
                             
                         }.fullScreenCover(item: $bleSdkManager.streamSettings) { streamSettings in
-                            if let settings = streamSettings {
-                                StreamSettingsView(bleSdkManager: bleSdkManager, streamedFeature: settings.feature, streamSettings: settings)
-                            }
+//                            if let settings = streamSettings {
+//                                StreamSettingsView(bleSdkManager: bleSdkManager, streamedFeature: settings.feature, streamSettings: settings)
+//                            }
+//                            streamSettings {
+                                StreamSettingsView(bleSdkManager: bleSdkManager, streamedFeature: streamSettings.feature, streamSettings: streamSettings)
+//                            }
+                            
                         }
                         Divider()
                         // Display area for the recieved data packets
